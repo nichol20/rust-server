@@ -6,8 +6,10 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+// Import custom thread pool from the rust_server crate
 use rust_server::ThreadPool;
 
+// Declare external C functions for math operations
 unsafe extern "C" {
     fn add_ints(a: i64, b: i64) -> i64;
     fn sub_ints(a: i64, b: i64) -> i64;
@@ -15,6 +17,7 @@ unsafe extern "C" {
     fn div_ints(a: i64, b: i64, result: *mut i64) -> bool;
 }
 
+// Define a simple User struct with name and age
 #[derive(Debug)]
 struct User {
     name: String,
@@ -22,26 +25,32 @@ struct User {
 }
 
 fn main() {
+    // Start a TCP listener on localhost:7878
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    // Create a thread pool with 4 worker threads
     let pool = ThreadPool::new(4);
 
-    // Shared user storage (thread-safe)
+    // Shared, thread-safe storage for users using Arc and Mutex
     let users = Arc::new(Mutex::new(VecDeque::<User>::new()));
 
+    // Accept incoming TCP connections in a loop
     for stream in listener.incoming() {
         let stream = stream.unwrap();
         let users = Arc::clone(&users);
 
+        // Handle each connection in the thread pool
         pool.execute(|| {
             handle_connection(stream, users);
         });
     }
 }
 
+// Handles a single HTTP connection
 fn handle_connection(mut stream: TcpStream, users: Arc<Mutex<VecDeque<User>>>) {
     let mut buffer = [0; 1024];
     stream.read(&mut buffer).unwrap();
 
+    // Parse the HTTP request
     let request = String::from_utf8_lossy(&buffer[..]);
     let request_line = request.lines().next().unwrap_or("");
     let mut parts = request_line.split_whitespace();
@@ -50,6 +59,7 @@ fn handle_connection(mut stream: TcpStream, users: Arc<Mutex<VecDeque<User>>>) {
     let path = parts.next().unwrap_or("/");
     let (path, query) = path.split_once('?').unwrap_or((path, ""));
 
+    // Match the request to a handler
     let response = match (method, path) {
         ("GET", "/") => serve_static("index.html", 200),
         ("GET", "/users") => get_users(&users, query),
@@ -60,20 +70,24 @@ fn handle_connection(mut stream: TcpStream, users: Arc<Mutex<VecDeque<User>>>) {
         }
         ("GET", "/api/hello") => serve_json(r#"{"message": "Hello, world!"}"#),
         ("POST", "/users") => {
-            let body = request.split("\r\n\r\n").nth(1).unwrap_or(""); // Extract request body
+            // Extract request body for POST /users
+            let body = request.split("\r\n\r\n").nth(1).unwrap_or("");
             post_user(body, &users)
         }
         ("POST", "/math") => {
+            // Extract request body for POST /math
             let body = request.split("\r\n\r\n").nth(1).unwrap_or("");
-            post_math(body)
+            handle_post_math(body)
         }
-        _ => serve_static("404.html", 404),
+        _ => serve_static("404.html", 404), // Default: 404 Not Found
     };
 
+    // Send the HTTP response
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
 }
 
+// Serve a static HTML file with the given status code
 fn serve_static(filename: &str, status_code: u16) -> String {
     let message = match status_code {
         200 => "OK",
@@ -90,10 +104,12 @@ fn serve_static(filename: &str, status_code: u16) -> String {
             contents.len(),
             contents
         ),
+        // If file not found, serve 500.html as a fallback
         Err(_) => serve_static("500.html", 500),
     }
 }
 
+// Serve a JSON response with HTTP 200 OK
 fn serve_json(json: &str) -> String {
     format!(
         "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
@@ -102,7 +118,7 @@ fn serve_json(json: &str) -> String {
     )
 }
 
-// Handle POST /users
+// Handle POST /users: parse JSON body and add user to storage
 fn post_user(body: &str, users: &Arc<Mutex<VecDeque<User>>>) -> String {
     if let Some((name, age)) = parse_json_user(body) {
         let mut users_lock = users.lock().unwrap();
@@ -113,11 +129,12 @@ fn post_user(body: &str, users: &Arc<Mutex<VecDeque<User>>>) -> String {
     "HTTP/1.1 400 BAD REQUEST\r\nContent-Length: 0\r\n\r\n".to_string()
 }
 
-// Handle GET /users
+// Handle GET /users: filter users by query parameters and return as JSON
 fn get_users(users: &Arc<Mutex<VecDeque<User>>>, query: &str) -> String {
     let mut name_query: Option<&str> = None;
     let mut age_query: Option<u8> = None;
 
+    // Parse query string for name and age filters
     for pair in query.split('&') {
         let mut key_value = pair.split('=');
         if let (Some(key), Some(value)) = (key_value.next(), key_value.next()) {
@@ -130,6 +147,7 @@ fn get_users(users: &Arc<Mutex<VecDeque<User>>>, query: &str) -> String {
     }
 
     let users_lock = users.lock().unwrap();
+    // Filter users based on query parameters
     let filtered_users: Vec<String> = users_lock
         .iter()
         .filter(|user| {
@@ -144,7 +162,7 @@ fn get_users(users: &Arc<Mutex<VecDeque<User>>>, query: &str) -> String {
     serve_json(&json_response)
 }
 
-// Simple JSON parser
+// Parse a simple JSON body for a user: {"name":"Alice","age":30}
 fn parse_json_user(body: &str) -> Option<(String, u8)> {
     let body = body.trim_matches(char::from(0)).trim();
     if body.starts_with('{') && body.ends_with('}') {
@@ -152,6 +170,7 @@ fn parse_json_user(body: &str) -> Option<(String, u8)> {
         let mut name = String::new();
         let mut age = None;
 
+        // Split by comma, then by colon to get key-value pairs
         for pair in body.split(',') {
             let mut key_value = pair.split(':').map(str::trim);
             let key = key_value.next()?.trim_matches('"');
@@ -172,7 +191,8 @@ fn parse_json_user(body: &str) -> Option<(String, u8)> {
     None
 }
 
-fn post_math(body: &str) -> String {
+// Handle POST /math: parse JSON body and perform math operation using FFI
+fn handle_post_math(body: &str) -> String {
     if let Some((operator, arg1, arg2)) = parse_json_math(body) {
         let result = match operator.as_str() {
             "+" => unsafe { add_ints(arg1, arg2) },
@@ -198,6 +218,7 @@ fn post_math(body: &str) -> String {
     "HTTP/1.1 400 BAD REQUEST\r\nContent-Length: 0\r\n\r\n".to_string()
 }
 
+// Parse a simple JSON body for math: {"operator":"+","arg1":1,"arg2":2}
 fn parse_json_math(body: &str) -> Option<(String, i64, i64)> {
     let body = body.trim_matches(char::from(0)).trim();
     if body.starts_with('{') && body.ends_with('}') {
@@ -206,6 +227,7 @@ fn parse_json_math(body: &str) -> Option<(String, i64, i64)> {
         let mut arg1 = None;
         let mut arg2 = None;
 
+        // Split by comma, then by colon to get key-value pairs
         for pair in body.split(',') {
             let mut key_value = pair.split(':').map(str::trim);
             let key = key_value.next()?.trim_matches('"');
