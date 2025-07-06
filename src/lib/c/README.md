@@ -2,8 +2,6 @@
 
 A small, header-only C “mathlib” providing basic integer arithmetic (add, subtract, multiply, safe divide) as both a static and shared library. Designed to be consumable from C, C++, Rust, or any language that can call a C ABI.
 
----
-
 ## Features
 
 - `add_ints(int64_t a, int64_t b)` → `a + b`  
@@ -38,36 +36,6 @@ make test
 
 This will compile and run `test_mathlib`, exercising all four operations and verifying divide-by-zero handling.
 
----
-
-## Usage from C / C++
-
-```c
-#include "mathlib.h"
-#include <stdio.h>
-
-int main(void) {
-    int64_t x = 10, y = 3, q;
-    printf("add: %lld\n", add_ints(x,y));
-    printf("sub: %lld\n", sub_ints(x,y));
-    printf("mul: %lld\n", mul_ints(x,y));
-    if (div_ints(x,y,&q)) {
-        printf("div: %lld\n", q);
-    } else {
-        printf("division by zero!\n");
-    }
-    return 0;
-}
-```
-
-Compile & link (static):
-
-```bash
-gcc -I. example.c -L. -lmathlib -o example
-```
-
----
-
 ## Usage from Rust
 
 Copy or submodule the `src/lib/c` directory into your Cargo project. In your `build.rs`:
@@ -93,6 +61,7 @@ fn main() {
     println!("cargo:rerun-if-changed=src/lib/c/mathlib.c");
     println!("cargo:rerun-if-changed=src/lib/c/mathlib.h");
 }
+
 ```
 
 In your Rust code:
@@ -116,8 +85,6 @@ fn main() {
     }
 }
 ```
-
----
 
 ## Makefile Targets
 
