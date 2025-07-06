@@ -1,0 +1,107 @@
+### Serve index.html
+GET http://127.0.0.1:7878/
+Accept: text/html
+
+###
+
+### 404 Not Found (non-existent file)
+GET http://127.0.0.1:7878/error
+Accept: text/html
+
+###
+
+### Slow response (sleep 5s)
+GET http://127.0.0.1:7878/sleep
+Accept: text/html
+
+###
+
+### Simple JSON API
+GET http://127.0.0.1:7878/api/hello
+Accept: application/json
+
+###
+
+### List all users (initially empty)
+GET http://127.0.0.1:7878/users
+Accept: application/json
+
+###
+
+### List users filtered by name or age
+# by name contains "li"
+GET http://127.0.0.1:7878/users?name=li
+Accept: application/json
+
+# by exact age
+GET http://127.0.0.1:7878/users?age=30
+Accept: application/json
+
+# both filters
+GET http://127.0.0.1:7878/users?name=li&age=30
+Accept: application/json
+
+###
+
+### Create a new user
+POST http://127.0.0.1:7878/users
+Content-Type: application/json
+
+{
+  "name": "Alice",
+  "age": 30
+}
+
+###
+
+### Math operations
+#### Addition
+POST http://127.0.0.1:7878/math
+Content-Type: application/json
+
+{
+  "operator": "+",
+  "arg1": 10,
+  "arg2": 5
+}
+
+#### Subtraction
+POST http://127.0.0.1:7878/math
+Content-Type: application/json
+
+{
+  "operator": "-",
+  "arg1": 10,
+  "arg2": 5
+}
+
+#### Multiplication
+POST http://127.0.0.1:7878/math
+Content-Type: application/json
+
+{
+  "operator": "*",
+  "arg1": 6,
+  "arg2": 4
+}
+
+#### Division (valid)
+POST http://127.0.0.1:7878/math
+Content-Type: application/json
+
+{
+  "operator": "/",
+  "arg1": 20,
+  "arg2": 4
+}
+
+#### Division (by zero → Bad Request)
+POST http://127.0.0.1:7878/math
+Content-Type: application/json
+
+{
+  "operator": "/",
+  "arg1": 20,
+  "arg2": 0
+}
+
