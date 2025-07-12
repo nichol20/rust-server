@@ -2,11 +2,10 @@
 
 A lightweight, multi-threaded HTTP server in Rust that demonstrates:
 
-- **Zero-cost abstractions**: safe, ergonomic Rust code for collections, I/O, networking and threading.  
-- **FFI interoperability**: call into a small C math library (`libmathlib.a`) with no runtime overhead.  
-- **Custom thread-pool**: simple work-stealing thread pool (`rust_server::ThreadPool`) for handling many concurrent clients.  
-- **JSON APIs & static file serving**: mix of REST endpoints and static HTML pages.  
-- **Clean build artifacts**: C library built via `make` and linked through Cargo’s `build.rs`, keeping your source tree pristine.
+- **FFI interoperability**  
+- **Custom thread-pool**  
+- **JSON APIs & static file serving**
+- **Build artifacts**
 
 
 ## 🔨 Prerequisites
