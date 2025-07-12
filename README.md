@@ -1,6 +1,6 @@
 # Rust HTTP Server
 
-A lightweight, multi-threaded HTTP server in Rust that demonstrates:
+A multi-threaded HTTP server in Rust that demonstrates:
 
 - **FFI interoperability**  
 - **Custom thread-pool**  
