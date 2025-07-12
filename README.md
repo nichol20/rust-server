@@ -104,11 +104,11 @@ Most of these are covered in `server.http`—just open it in VS Code and click *
 
 2. **FFI Bindings**
    * `unsafe extern "C"` declarations for `add_ints`, `sub_ints`, etc.
-   * Zero-cost bridging into a hand-written C library.
+   * Zero-cost bridging into a C library.
 
 3. **Thread Pool**
    * `rust_server::ThreadPool::new(4)` spins up 4 workers.
-   * Each incoming connection is `execute`d as a job—no blocking the listener.
+   * Each incoming connection is executed as a job—no blocking the listener.
 
 ## 📝 Testing
 
